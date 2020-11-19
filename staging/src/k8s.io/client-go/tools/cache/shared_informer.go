@@ -186,8 +186,19 @@ type deleteNotification struct {
 	oldObj interface{}
 }
 
+func (s *sharedIndexInformer) HasStarted() bool {
+	s.startedLock.Lock()
+	defer s.startedLock.Unlock()
+	return s.started
+}
+
 func (s *sharedIndexInformer) Run(stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
+
+	if s.HasStarted() {
+		klog.Warningf("The sharedIndexInformer has started, run more than once is not allowed")
+		return
+	}
 
 	fifo := NewDeltaFIFO(MetaNamespaceKeyFunc, s.indexer)
 
